@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 export const storeApi = createApi({
   reducerPath: "storeApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `http://192.168.1.105:3000/api/v1` }),
+  baseQuery: fetchBaseQuery({ baseUrl: `http://192.168.1.102:3000/api/v1` }),
   endpoints: (builder) => ({
     registerUser: builder.mutation({
       query: (data) => ({
@@ -28,4 +28,8 @@ export const storeApi = createApi({
   }),
 });
 
-export const { useRegisterUserMutation, useGetAllUsersMutation, useGetUserLocationMutation } = storeApi;
+export const {
+  useRegisterUserMutation,
+  useGetAllUsersMutation,
+  useGetUserLocationMutation,
+} = storeApi;

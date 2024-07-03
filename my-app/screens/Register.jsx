@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import useLocation from "../customHooks/useLocation";
 import axios from "axios";
 
-const Register = () => {
+const Register = ({ navigation }) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [userType, setUserType] = useState("");
@@ -22,8 +22,13 @@ const Register = () => {
     }
 
     try {
-      const response = await registerUser({ name, email, userType, password });
-      console.log(response.data, "fffffff");
+      const response = await registerUser({
+        name,
+        email,
+        userType: userType.toLocaleLowerCase(),
+        password,
+      });
+      // console.log(response.data, "fffffff");
       if (response.data) {
         await AsyncStorage.setItem("userData", JSON.stringify(response.data));
         Alert.alert("Success", "User registered successfully");
@@ -46,7 +51,7 @@ const Register = () => {
             currentLocation?.longitude
           ) {
             await axios.post(
-              "http://192.168.1.105:3000/api/v1/getUserLocation",
+              "http://192.168.1.102:3000/api/v1/getUserLocation",
               {
                 id: parsedData.data._id,
                 lat: currentLocation?.latitude,

@@ -8,6 +8,7 @@ import {
   Alert,
 } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
+import CheckLogin from "./CheckLogin";
 
 export default function PaymentScreen({ navigation }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -21,38 +22,6 @@ export default function PaymentScreen({ navigation }) {
       initializePaymentSheet();
     }
   }, [clientSecret]);
-
-  const fetchPaymentSheetParams = async () => {
-    try {
-      let data = {
-        currency: currency,
-        amount: parseInt(amount, 10) * 100, // Convert to smallest currency unit
-      };
-
-      const response = await fetch("http://192.168.1.104:3000/payment-sheet", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const { paymentIntent, ephemeralKey, customer } = await response.json();
-      return {
-        paymentIntent,
-        ephemeralKey,
-        customer,
-      };
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Payment setup failed", err.message);
-      return null;
-    }
-  };
 
   const initializePaymentSheet = async () => {
     const { paymentIntent, ephemeralKey, customer } =
@@ -98,6 +67,7 @@ export default function PaymentScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <CheckLogin />
       <Text style={styles.title}>Payment Screen</Text>
 
       <TextInput

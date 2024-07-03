@@ -27,15 +27,16 @@ exports.registerUser = async (req, res, next) => {
 exports.getAllUser = async (req, res, next) => {
   try {
     const { userType } = req.body;
-    console.log(userType, "userType");
-    if (userType === "user") {
-      const users = await User.find({ userType: "rider" });
+    console.log(userType.toLocaleLowerCase(), "userType");
+    if (userType.toLocaleLowerCase() === "user") {
+      const users = await User.find({ userType: ["rider", "user"] });
+      // console.log(users, "users");
       res.status(200).json({
         status: "success",
         data: users,
       });
     } else {
-      const users = await User.find({ userType: "user" });
+      const users = await User.find({ userType: ["user", "rider"] });
       res.status(200).json({
         status: "success",
         data: users,

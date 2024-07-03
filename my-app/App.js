@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import useLocation from "./customHooks/useLocation";
 import { GlobalContextProvider } from "./context/GlobalStateProvider";
+import CheckLogin from "./screens/CheckLogin";
 
 const Stack = createStackNavigator();
 
@@ -28,13 +29,14 @@ export default function App() {
         const userData1 = await AsyncStorage.getItem("userData");
         if (userData1) {
           const parsedData = JSON.parse(userData1);
+
           setUserData(parsedData);
           if (
             (parsedData?.data?._id && currentLocation?.latitude) ||
             currentLocation?.longitude
           ) {
             await axios.post(
-              "http://192.168.1.105:3000/api/v1/getUserLocation",
+              "http://192.168.1.102:3000/api/v1/getUserLocation",
               {
                 id: parsedData.data._id,
                 lat: currentLocation?.latitude,
@@ -44,12 +46,14 @@ export default function App() {
           }
         }
       } catch (error) {
-        console.error("Error retrieving data: ", error.message);
+        // console.error("Error retrieving data kkkk: ", error.message);
+        alert("please login again");
       }
     };
 
     fetchData();
   }, [currentLocation]);
+  // console.log(userData, "myData");
 
   return (
     <Provider store={store}>

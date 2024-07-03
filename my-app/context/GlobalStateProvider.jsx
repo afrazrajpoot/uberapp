@@ -56,7 +56,7 @@ const GlobalContextProvider = ({ children }) => {
 
     checkLoginStatus();
   }, []);
-
+  // console.log(data, "myData");
   return (
     <GlobalContext.Provider
       value={{
