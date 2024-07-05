@@ -8,7 +8,6 @@ import {
   Alert,
 } from "react-native";
 import { useStripe } from "@stripe/stripe-react-native";
-import CheckLogin from "./CheckLogin";
 
 export default function PaymentScreen({ navigation }) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
@@ -23,14 +22,42 @@ export default function PaymentScreen({ navigation }) {
     }
   }, [clientSecret]);
 
-  const initializePaymentSheet = async () => {
-    const { paymentIntent, ephemeralKey, customer } =
-      await fetchPaymentSheetParams();
+  const fetchPaymentSheetParams = async () => {
+    try {
+      const response = await fetch("http://192.168.1.102:3000/payment-sheet", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currency, amount }),
+      });
 
-    if (!paymentIntent) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        paymentIntent: data.paymentIntent,
+        ephemeralKey: data.ephemeralKey,
+        customer: data.customer,
+      };
+    } catch (error) {
+      console.error("Error fetching payment sheet params:", error);
+      Alert.alert("Network request failed", error.message);
+      return null;
+    }
+  };
+
+  const initializePaymentSheet = async () => {
+    const params = await fetchPaymentSheetParams();
+
+    if (!params) {
       setProcessing(false);
       return;
     }
+
+    const { paymentIntent, ephemeralKey, customer } = params;
 
     const { error } = await initPaymentSheet({
       paymentIntentClientSecret: paymentIntent,
@@ -61,13 +88,17 @@ export default function PaymentScreen({ navigation }) {
   };
 
   const handlePayPress = async () => {
+    const minAmount = 50;
+    if (parseFloat(amount) * 100 < minAmount) {
+      Alert.alert("Amount too small", "The minimum amount is €0.50.");
+      return;
+    }
     setProcessing(true);
     await initializePaymentSheet();
   };
 
   return (
     <View style={styles.container}>
-      <CheckLogin />
       <Text style={styles.title}>Payment Screen</Text>
 
       <TextInput

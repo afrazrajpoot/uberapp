@@ -9,12 +9,16 @@ const GlobalContextProvider = ({ children }) => {
   const [data, setData] = useState(null);
   const [login, setLogin] = useState(false);
   const [location, setLocation] = useState({});
+
   // Function to save token in local storage
   const tokenInlocal = async (data) => {
     try {
-      await AsyncStorage.setItem("userData", JSON.stringify(data));
+      if (data) {
+        console.log(data, "datallll");
+        await AsyncStorage.setItem("userData", JSON.stringify(data));
+      }
     } catch (error) {
-      console.log(error);
+      console.error("Error setting user data in AsyncStorage", error);
     }
   };
 
@@ -47,16 +51,16 @@ const GlobalContextProvider = ({ children }) => {
         const userData = await AsyncStorage.getItem("userData");
         if (userData) {
           setLogin(true);
-          setData(JSON.parse(userData));
+          // setData(JSON.parse(userData));
         }
       } catch (error) {
-        console.log(error);
+        console.error("Error checking login status", error);
       }
     };
 
     checkLoginStatus();
   }, []);
-  // console.log(data, "myData");
+
   return (
     <GlobalContext.Provider
       value={{

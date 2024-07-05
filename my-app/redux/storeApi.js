@@ -11,6 +11,13 @@ export const storeApi = createApi({
         body: data,
       }),
     }),
+    loginUser: builder.mutation({
+      query: (data) => ({
+        url: "/login",
+        method: "POST",
+        body: data,
+      }),
+    }),
     getAllUsers: builder.mutation({
       query: (data) => ({
         url: "/getUsers",
@@ -32,4 +39,5 @@ export const {
   useRegisterUserMutation,
   useGetAllUsersMutation,
   useGetUserLocationMutation,
+  useLoginUserMutation,
 } = storeApi;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { StyleSheet, View, ActivityIndicator, Text } from "react-native";
 import MapView, { Marker, Circle, Polyline } from "react-native-maps";
 import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -12,8 +12,8 @@ export default function Map() {
   const [getUserByType, { isError, isLoading, data }] =
     useGetAllUsersMutation();
   const [region, setRegion] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
+    latitude: 31.5204, // Latitude of Lahore
+    longitude: 74.3587, // Longitude of Lahore
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
@@ -21,13 +21,14 @@ export default function Map() {
   const [destination, setDestination] = useState(null);
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [nearbyMarkers, setNearbyMarkers] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [distance, setDistance] = useState(null);
 
-  // Custom coordinates array
-  const customCoordinates = [
-    { latitude: 34.052235, longitude: -118.243683 }, // Los Angeles
-    { latitude: 40.712776, longitude: -74.005974 }, // New York
-    { latitude: 41.878113, longitude: -87.629799 }, // Chicago
-    { latitude: 47.606209, longitude: -122.332069 }, // Seattle
+  const customMarkers = [
+    { id: 1, latitude: 31.5497, longitude: 74.3436, title: "Badshahi Mosque" },
+    { id: 2, latitude: 31.5841, longitude: 74.3587, title: "Lahore Fort" },
+    { id: 3, latitude: 31.558, longitude: 74.3286, title: "Minar-e-Pakistan" },
+    // Add more markers as needed
   ];
 
   useEffect(() => {
@@ -37,10 +38,12 @@ export default function Map() {
         if (userData1) {
           const parsedData = JSON.parse(userData1);
           setUserData(parsedData);
-          const res = await getUserByType({
-            userType: parsedData?.data?.userType,
+          console.log(parsedData.data.data.userType, "myDataAsync");
+          await getUserByType({
+            userType: parsedData?.data?.data?.userType,
           });
-          console.log(res, "redddddd");
+        } else {
+          console.log("no data");
         }
       } catch (error) {
         console.error("Error retrieving data: ", error.message);
@@ -77,24 +80,31 @@ export default function Map() {
   }, []);
 
   useEffect(() => {
-    if (currentLocation && data?.data) {
-      const nearbyLocations = data.data.filter((location) => {
-        const distance = getDistanceFromLatLonInKm(
-          currentLocation.latitude,
-          currentLocation.longitude,
-          location.lat,
-          location.long
+    const watchLocation = async () => {
+      try {
+        const location = await Location.watchPositionAsync(
+          { accuracy: Location.Accuracy.High, distanceInterval: 10 }, // Update every 10 meters
+          (location) => {
+            const { latitude, longitude } = location.coords;
+            setCurrentLocation({ latitude, longitude });
+            if (selectedMarker) {
+              fetchRoute({ latitude, longitude }, selectedMarker);
+            }
+          }
         );
-        return distance <= 10; // Adjust the radius as needed
-      });
-      setNearbyMarkers(nearbyLocations);
-    }
-  }, [currentLocation, data]);
+        return () => location.remove(); // Clean up watcher
+      } catch (error) {
+        console.error("Error watching location: ", error.message);
+      }
+    };
+
+    watchLocation();
+  }, [selectedMarker]);
 
   const fetchRoute = async (origin, destination) => {
     const originString = `${origin.latitude},${origin.longitude}`;
     const destinationString = `${destination.latitude},${destination.longitude}`;
-    const apiKey = "AIzaSyA7cZCuVvMKML7cS7L-5uzyk5OrSEyqXW8"; // replace with your API key
+    const apiKey = "AIzaSyA7cZCuVvMKML7cS7L-5uzyk5OrSEyqXW8"; // Replace with your API key
 
     try {
       const response = await fetch(
@@ -108,29 +118,21 @@ export default function Map() {
           longitude: point[1],
         }));
         setRouteCoordinates(routeCoords);
-      } else {
-        console.error("No routes found");
+        calculateDistance(origin, destination);
       }
     } catch (error) {
       console.error("Error fetching route: ", error.message);
     }
   };
 
-  const onPlaceSelected = (details) => {
-    if (details) {
-      const { lat, lng } = details.geometry.location;
-      const destinationCoords = { latitude: lat, longitude: lng };
-      setDestination(destinationCoords);
-      setRegion({
-        latitude: lat,
-        longitude: lng,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-      if (currentLocation) {
-        fetchRoute(currentLocation, destinationCoords);
-      }
-    }
+  const calculateDistance = (origin, destination) => {
+    const distanceInKm = getDistanceFromLatLonInKm(
+      origin.latitude,
+      origin.longitude,
+      destination.latitude,
+      destination.longitude
+    );
+    setDistance(distanceInKm.toFixed(2)); // Round to 2 decimal places
   };
 
   const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
@@ -148,6 +150,11 @@ export default function Map() {
     return R * c; // Distance in km
   };
 
+  const onMarkerPress = (marker) => {
+    setSelectedMarker(marker);
+    fetchRoute(currentLocation, marker);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -163,7 +170,7 @@ export default function Map() {
         fetchDetails={true}
         onPress={(data, details = null) => onPlaceSelected(details)}
         query={{
-          key: "AIzaSyA7cZCuVvMKML7cS7L-5uzyk5OrSEyqXW8", // replace with your API key
+          key: "AIzaSyA7cZCuVvMKML7cS7L-5uzyk5OrSEyqXW8", // Replace with your API key
           language: "en",
         }}
         styles={{
@@ -179,7 +186,13 @@ export default function Map() {
         }}
       />
 
-      <MapView style={styles.map} initialRegion={region} region={region}>
+      <MapView
+        style={styles.map}
+        initialRegion={region}
+        zoomEnabled={true}
+        provider="google"
+        region={region}
+      >
         {currentLocation && (
           <Circle
             center={{
@@ -193,13 +206,11 @@ export default function Map() {
         )}
 
         {destination && (
-          <>
-            <Marker
-              coordinate={destination}
-              title="Destination"
-              pinColor="green"
-            />
-          </>
+          <Marker
+            coordinate={destination}
+            title="Destination"
+            pinColor="green"
+          />
         )}
 
         {routeCoordinates.length > 0 && (
@@ -210,25 +221,37 @@ export default function Map() {
           />
         )}
 
-        {nearbyMarkers.map((item, index) => (
+        {data?.data?.map((item, index) => (
           <Marker
             key={index}
             coordinate={{
-              latitude: parseFloat(item.lat),
-              longitude: parseFloat(item.long),
+              latitude: parseFloat(item?.lat),
+              longitude: parseFloat(item?.long),
             }}
             title={item?.name || `User ${index + 1}`}
+            pinColor={item?._id === userData?.data?.data?._id ? "blue" : "red"} // Blue for the login user, red for others
+            onPress={() => onMarkerPress(item)}
           />
         ))}
 
-        {customCoordinates.map((coords, index) => (
+        {customMarkers.map((marker) => (
           <Marker
-            key={index}
-            coordinate={coords}
-            title={`Custom Location ${index + 1}`}
+            key={marker.id}
+            coordinate={{
+              latitude: marker.latitude,
+              longitude: marker.longitude,
+            }}
+            title={marker.title}
+            onPress={() => onMarkerPress(marker)}
           />
         ))}
       </MapView>
+
+      {selectedMarker && (
+        <View style={styles.distanceContainer}>
+          <Text style={styles.distanceText}>Distance: {distance} km</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -243,5 +266,17 @@ const styles = StyleSheet.create({
   },
   map: {
     ...StyleSheet.absoluteFillObject,
+  },
+  distanceContainer: {
+    position: "absolute",
+    bottom: 10,
+    backgroundColor: "white",
+    padding: 10,
+    borderRadius: 5,
+    elevation: 3,
+  },
+  distanceText: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

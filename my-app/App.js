@@ -10,60 +10,26 @@ import Register from "./screens/Register";
 
 import { Provider } from "react-redux";
 import { store } from "./redux/store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import useLocation from "./customHooks/useLocation";
+
 import { GlobalContextProvider } from "./context/GlobalStateProvider";
-import CheckLogin from "./screens/CheckLogin";
+
+import Login from "./screens/Login";
+import HomeScreen from "./screens/HomeScreen";
 
 const Stack = createStackNavigator();
 
 export default function App() {
-  const [userData, setUserData] = useState(null);
-
-  const { currentLocation } = useLocation();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const userData1 = await AsyncStorage.getItem("userData");
-        if (userData1) {
-          const parsedData = JSON.parse(userData1);
-
-          setUserData(parsedData);
-          if (
-            (parsedData?.data?._id && currentLocation?.latitude) ||
-            currentLocation?.longitude
-          ) {
-            await axios.post(
-              "http://192.168.1.102:3000/api/v1/getUserLocation",
-              {
-                id: parsedData.data._id,
-                lat: currentLocation?.latitude,
-                long: currentLocation?.longitude,
-              }
-            );
-          }
-        }
-      } catch (error) {
-        // console.error("Error retrieving data kkkk: ", error.message);
-        alert("please login again");
-      }
-    };
-
-    fetchData();
-  }, [currentLocation]);
-  // console.log(userData, "myData");
-
   return (
     <Provider store={store}>
       <GlobalContextProvider>
         <StripeProvider publishableKey="pk_test_51PQFreRvJI1ePtmLcNj1cfOWDLO7hiiJ7We2fNJxyAOOrqDse9wNZSvxSII3f6PyDBIz4LakPITeYQGaRfrM4rb900i2aZENEZ">
           <NavigationContainer>
-            <Stack.Navigator initialRouteName="Payment">
-              <Stack.Screen name="Payment" component={PaymentScreen} />
+            <Stack.Navigator initialRouteName="home">
+              <Stack.Screen name="payment" component={PaymentScreen} />
+              <Stack.Screen name="home" component={HomeScreen} />
               <Stack.Screen name="Map" component={Map} />
               <Stack.Screen name="register" component={Register} />
+              <Stack.Screen name="login" component={Login} />
             </Stack.Navigator>
           </NavigationContainer>
           <StatusBar style="auto" />

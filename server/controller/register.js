@@ -1,9 +1,10 @@
 const User = require("../models/userModel");
 const AppError = require("../utils/customError");
+const jwt = require("jsonwebtoken");
 exports.registerUser = async (req, res, next) => {
   try {
     const { name, email, password, userType } = req.body;
-    console.log(name, email, password, userType);
+    // console.log(name, email, password, userType);
     if (!name || !email || !userType || !password) {
       return next(new AppError("Please fill out all fields", 400));
     }
@@ -50,7 +51,7 @@ exports.getAllUser = async (req, res, next) => {
 exports.getUserLocation = async (req, res, next) => {
   try {
     const { id, long, lat } = req.body;
-    console.log(id, "user id", long, lat);
+    // console.log(id, "user id", long, lat);
 
     if (id) {
       // Use findOne() instead of find() to get a single document
@@ -83,6 +84,30 @@ exports.getUserLocation = async (req, res, next) => {
     }
   } catch (err) {
     console.error(err);
+    return next(new AppError(err.message, 500));
+  }
+};
+exports.loginUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    console.log(email, password, "eeee ppp");
+    if (!email || !password) {
+      return next(new AppError("Please fill out all fields", 400));
+    }
+    const user = await User.findOne({ email }).select("+password");
+    if (!user || !(await user.comparePassword(password, user.password))) {
+      return next(new AppError("Incorrect email or password", 401));
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: process.env.JWT_EXPIRES_IN,
+    });
+    res.status(200).json({
+      status: "success",
+      data: user,
+      token,
+    });
+  } catch (err) {
     return next(new AppError(err.message, 500));
   }
 };
