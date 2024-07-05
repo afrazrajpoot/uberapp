@@ -55,6 +55,10 @@ export default function PaymentScreen({ navigation }) {
   };
 
   const handlePayPress = async () => {
+    if (!amount || !currency) {
+      Alert.alert("Missing amount or currency");
+      return;
+    }
     const minAmount = 50;
     if (parseFloat(amount) * 100 < minAmount) {
       Alert.alert("Amount too small", "The minimum amount is €0.50.");
